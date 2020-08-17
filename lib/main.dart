@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jadwalsholat/header_content.dart';
 import 'package:jadwalsholat/model/response_jadwal.dart';
+import 'package:jadwalsholat/list_jadwal.dart';
 
 void main() {
   runApp(MyApp());
@@ -32,10 +33,11 @@ class MyHomeScreen extends StatefulWidget {
 }
 
 class _MyHomeScreenState extends State<MyHomeScreen> {
-  TextEditingController locationCOntroller = TextEditingController();
+  TextEditingController _locationControler = TextEditingController();
 
   //request data api
   Future<ResponseJadwal> getJadwal({String location}) async {
+    //url api
     String url =
         'https://api.pray.zone/v2/times/today.json?city=$location&school=9';
 
@@ -46,14 +48,22 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
   }
 
   @override
+  void initState() {
+    if (_locationControler.text.isEmpty || _locationControler.text == null) {
+      _locationControler.text = "bogor";
+    }
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final body = Expanded(
         child: FutureBuilder(
             future: getJadwal(
-                location: locationCOntroller.text.toLowerCase().toString()),
-            builder: (context, AsyncSnapshot snapShot) {
+                location: _locationControler.text.toLowerCase().toString()),
+            builder: (context, snapShot) {
               if (snapShot.hasData) {
-                //return listContent(snapShot.data);
+                return ListJadwal(snapShot.data);
               } else if (snapShot.hasError) {
                 print(snapShot.error);
                 return Positioned.fill(
@@ -110,21 +120,20 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
           ),
         ),
         FutureBuilder(
-            future: getJadwal(location: 'Bogor'),
+            future: getJadwal(
+                location: _locationControler.text.toLowerCase().toString()),
             builder: (context, AsyncSnapshot snapshot) {
               if (snapshot.hasData) {
                 return HeaderContent(snapshot.data);
               } else if (snapshot.hasError) {
                 print(snapshot.error);
-                return Align(
-                    alignment: Alignment.center,
+                return Center(
                     child: Text('Data tidak tersedia',
-                        style: TextStyle(color: Colors.white)));
+                        style: TextStyle(color: Colors.white)
+                    ),
+                );
               }
-              return Positioned.fill(
-                  child: Align(
-                      alignment: Alignment.center,
-                      child: CircularProgressIndicator()));
+              return Center(child: CircularProgressIndicator());
             })
       ],
     );
@@ -143,13 +152,17 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
           return AlertDialog(
             title: Text('Ubah lokasi'),
             content: TextField(
-              controller: locationCOntroller,
+              controller: _locationControler,
               decoration: InputDecoration(hintText: 'Masukan lokasi'),
             ),
             actions: <Widget>[
               FlatButton(
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.pop(context, () {
+                      setState(() {
+                        getJadwal(location: _locationControler.text.toLowerCase().toString());
+                      });
+                    });
                   },
                   child: Text("CANCEL")),
               FlatButton(
@@ -157,7 +170,7 @@ class _MyHomeScreenState extends State<MyHomeScreen> {
                     Navigator.pop(context, () {
                       setState(() {
                         getJadwal(
-                            location: locationCOntroller.text
+                            location: _locationControler.text
                                 .toLowerCase()
                                 .toString());
                       });
